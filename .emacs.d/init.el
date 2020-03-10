@@ -1,8 +1,13 @@
-;; Disable the splash screen (to enable it agin, replace the t with 0)
-(setq inhibit-splash-screen t)
+;; .emacs.d/init.el
+;; Author: Sofia Borgå, with inspiration from many many others.
 
-;; Enable MELPA packages
+;; ===================================
+;; MELPA Package Support
+;; ===================================
+;; Enables basic packaging support
+
 (require 'package)
+
 (let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
                     (not (gnutls-available-p))))
        (proto (if no-ssl "http" "https")))
@@ -15,33 +20,100 @@ There are two things you can do about this warning:
 2. Remove this warning from your init file so you won't see it again."))
   
   ;;   Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
-  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
-  ;;(add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
+
+(add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
+(add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
+  
   (when (< emacs-major-version 24)
+    
     ;; For important compatibility libraries like cl-lib
+    
     (add-to-list 'package-archives (cons "gnu" (concat proto "://elpa.gnu.org/packages/")))))
+
+;; Initialize the package infrastructure
 (package-initialize)
 
-;; Enable transient mark mode
-(transient-mark-mode 1)
+;; If there are no archived package contents, refresh them
+(when (not package-archive-contents)
+  (package-refresh-contents))
 
-;; Adding variable pitch mode to text modes will help in rendering mixed fonts every time you edit markdown, org-mode, etc.
+;; Installs packages
+;;
+;; myPackages contains a list of package names
+(defvar myPackages
+  '(poet-theme                  ;; Poet-theme
+    material-theme              ;; Material-theme
+    elpy                        ;; Emacs Lisp Python Env
+    flycheck                    ;; Syntax checking
+    py-autopep8                 ;; Run autopep8 on save
+    ein                         ;; Emacs IPython Notebook
+    )
+  )
+
+;; Scans the list in myPackages
+;; If the package listed is not already installed, install it
+(mapc #'(lambda (package)
+          (unless (package-installed-p package)
+            (package-install package)))
+      myPackages)
+
+;; ===================================
+;; Basic config
+;; ===================================
+
+(setq inhibit-splash-screen t)      ;; Disable the splash screen (0 for enable)
+
+(global-linum-mode t)               ;; Enable line numbers globally
+
+(transient-mark-mode 1)             ;; Enable transient mark mode
+
 (add-hook 'text-mode-hook
 	  (lambda ()
 	    (variable-pitch-mode 1)))
+                                    ;; Adding variable pitch mode to text
+                                    ;; modes will help in rendering mixed
+                                    ;; fonts every time you edit markdown,
+                                    ;; org-mode, etc.
 
-;;Theme
-(require 'poet-theme)
+
+;; ===================================
+;; Theme config
+;; ===================================
+(load-theme 'material t)
+;;(require 'poet-theme)
 
 ;;(set-face-attribute 'default nil :family "Iosevka" :height 130)
 ;;(set-face-attribute 'fixed-pitch nil :family "Iosevka")
 ;;(set-face-attribute 'variable-pitch nil :family "Baskerville")
 
 
+;; ====================================
+;; Development Setup
+;; ====================================
+(elpy-enable)
 
-;;;
-;;; Org Mode Config
-;;;
+;; Use IPython for REPL
+(setq python-shell-interpreter "jupyter"
+      python-shell-interpreter-args "console --simple-prompt"
+      python-shell-prompt-detect-failure-warning nil)
+(add-to-list 'python-shell-completion-native-disabled-interpreters
+             "jupyter")
+
+
+;; Enable Flycheck
+(when (require 'flycheck nil t)
+  (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+  (add-hook 'elpy-mode-hook 'flycheck-mode))
+
+
+;; Enable autopep8
+(require 'py-autopep8)
+(add-hook 'elpy-mode-hook 'py-autopep8-enable-on-save)
+
+
+;;====================================
+;; Org Mode Config
+;;====================================
 
 ;;Installing dev version of org-mode OR...
 (setq load-path (cons "~/src/Emacs/org-mode/lisp" load-path))
@@ -131,6 +203,12 @@ There are two things you can do about this warning:
 (global-set-key "\C-ca" 'org-agenda)
 ;;(global-set-key "\C-cc" 'org-capture)
 ;;(global-set-key "\C-cb" 'org-iswitchb)
+
+;;
+;;
+;;
+;;
+;; USER_DEFINED init.el ENDS HERE
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
