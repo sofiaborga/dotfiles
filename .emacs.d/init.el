@@ -41,12 +41,18 @@ There are two things you can do about this warning:
 ;;
 ;; myPackages contains a list of package names
 (defvar myPackages
-  '(poet-theme                  ;; Poet-theme
-    material-theme              ;; Material-theme
+  '(doom-themes
+    theme-changer               ;; For toggling day/night themes
+    neotree                     ;; Nice-looking dir tree buffer
+    all-the-icons               ;; Icons for neotree
     elpy                        ;; Emacs Lisp Python Env
     flycheck                    ;; Syntax checking
     py-autopep8                 ;; Run autopep8 on save
-    ein                         ;; Emacs IPython Notebook
+    org-bullets                 ;; Nicer bullets for org headings
+    markdown-mode
+    simple-httpd
+    zmq
+    jupyter                     
     )
   )
 
@@ -75,16 +81,27 @@ There are two things you can do about this warning:
                                     ;; fonts every time you edit markdown,
                                     ;; org-mode, etc.
 
+(setq calendar-location-name "München, DE") 
+(setq calendar-latitude 48.13)
+(setq calendar-longitude 11.57)
 
 ;; ===================================
 ;; Theme config
 ;; ===================================
-(load-theme 'material t)
-;;(require 'poet-theme)
+(require 'theme-changer)
+(change-theme 'doom-tomorrow-day 'doom-tomorrow-night)
 
-;;(set-face-attribute 'default nil :family "Iosevka" :height 130)
-;;(set-face-attribute 'fixed-pitch nil :family "Iosevka")
-;;(set-face-attribute 'variable-pitch nil :family "Baskerville")
+;; Enable flashing mode-line on errors
+(doom-themes-visual-bell-config)
+ 
+;; Enable custom neotree theme (all-the-icons must be installed!)
+(doom-themes-neotree-config)
+;; or for treemacs users
+(setq doom-themes-treemacs-theme "doom-colors") ; use the colorful treemacs theme
+(doom-themes-treemacs-config)
+  
+;; Corrects (and improves) org-mode's native fontification.
+(doom-themes-org-config)
 
 
 ;; ====================================
@@ -130,13 +147,57 @@ There are two things you can do about this warning:
 ;;(require 'org)
 ;;(org-reload)
 
-;;(setq org-bullets-bullet-list
-  ;;   '("◉" "○"))
-;;(org-bullets 1)
-
-
 ;; Make Org mode work with files ending in .org
 (add-to-list 'auto-mode-alist '("\\.org$" . org-mode))
+
+;;==== VISUAL CONFIG =====
+;; Use visual-line-mode for org buffers
+(add-hook 'org-mode-hook 'visual-line-mode)
+
+;; ;; Use variable-pitch-mode for org buffers
+;; (add-hook 'org-mode-hook 'variable-pitch-mode)
+
+;; ;; Variable font etc depending on heading level
+;; (custom-theme-set-faces
+;;  'user
+;; '(variable-pitch ((t (:family "Source Sans Pro" :height 180 :weight light))))
+;; '(fixed-pitch ((t ( :family "Inconsolata" :slant normal :weight normal :height 1.0 :width normal)))))
+
+
+;; Font config
+(let* ((variable-tuple (cond ((x-list-fonts "Source Sans Pro") '(:font "Source Sans Pro"))
+                             ((x-list-fonts "Lucida Grande")   '(:font "Lucida Grande"))
+                             ((x-list-fonts "Verdana")         '(:font "Verdana"))
+                             ((x-family-fonts "Sans Serif")    '(:family "Sans Serif"))
+                             (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro."))))
+       (base-font-color     (face-foreground 'default nil 'default))
+       (headline           `(:inherit default :weight bold :foreground ,base-font-color)))
+
+  (custom-theme-set-faces 'user
+                          `(org-level-8 ((t (,@headline ,@variable-tuple))))
+                          `(org-level-7 ((t (,@headline ,@variable-tuple))))
+                          `(org-level-6 ((t (,@headline ,@variable-tuple))))
+                          `(org-level-5 ((t (,@headline ,@variable-tuple))))
+                          `(org-level-4 ((t (,@headline ,@variable-tuple :height 1.1))))
+                          `(org-level-3 ((t (,@headline ,@variable-tuple :height 1.2))))
+                          `(org-level-2 ((t (,@headline ,@variable-tuple :height 1.3))))
+                          `(org-level-1 ((t (,@headline ,@variable-tuple :height 1.4))))
+                          `(org-document-title ((t (,@headline ,@variable-tuple :height 1.5 :underline nil))))))
+
+;; Hide emphasis markers
+(setq org-hide-emphasis-markers t)
+
+;; Nicer bullets for headings
+(require 'org-bullets)
+(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+
+;; Nicer bullets for sublists
+(font-lock-add-keywords 'org-mode
+       '(("^ +\\([-*]\\) "
+       (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+
+
+;;==== FUNCTIONAL CONFIG ====
 
 ;;Helper variables
 (defvar org-default-GTD-dir        "~/GTD"                    "Primary GTD directory")
@@ -191,7 +252,7 @@ There are two things you can do about this warning:
 
 ;;Refile targets
 (setq org-refile-use-outline-path 'file)
-(setq org-refile-targets '(("~/GTD/master.org" :maxlevel . 5)
+(setq org-refile-targets '(("~/GTD/master.org" :maxlevel . 6)
                            ("~/GTD/someday.org" :level . 1)
                            ("~/GTD/tickler.org" :maxlevel . 1)
 			   ("~/GTD/bibliotek.org" :maxlevel . 4)
@@ -203,6 +264,7 @@ There are two things you can do about this warning:
 (global-set-key "\C-ca" 'org-agenda)
 ;;(global-set-key "\C-cc" 'org-capture)
 ;;(global-set-key "\C-cb" 'org-iswitchb)
+(global-set-key [f8] 'neotree-toggle)
 
 ;;
 ;;
@@ -218,10 +280,20 @@ There are two things you can do about this warning:
  '(custom-safe-themes
    (quote
     ("c7aa6fcf85e6fe4ea381733d9166d982bbc423af4a55c26f55f5d0cfb0ce1835" "4bdc0dfc53ae06323e031baf691f414babf13c9c9c35014dd07bb42c4db27c24" default)))
- '(package-selected-packages (quote (poet-theme org gnu-elpa-keyring-update))))
+ '(package-selected-packages
+   (quote
+    (all-the-icons neotree theme-changer spacemacs-theme poet-theme org gnu-elpa-keyring-update))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- )
+ '(org-document-title ((t (:inherit default :weight bold :foreground "#4d4d4c" :family "Sans Serif" :height 1.5 :underline nil))))
+ '(org-level-1 ((t (:inherit default :weight bold :foreground "#4d4d4c" :family "Sans Serif" :height 1.4))))
+ '(org-level-2 ((t (:inherit default :weight bold :foreground "#4d4d4c" :family "Sans Serif" :height 1.3))))
+ '(org-level-3 ((t (:inherit default :weight bold :foreground "#4d4d4c" :family "Sans Serif" :height 1.2))))
+ '(org-level-4 ((t (:inherit default :weight bold :foreground "#4d4d4c" :family "Sans Serif" :height 1.1))))
+ '(org-level-5 ((t (:inherit default :weight bold :foreground "#4d4d4c" :family "Sans Serif"))))
+ '(org-level-6 ((t (:inherit default :weight bold :foreground "#4d4d4c" :family "Sans Serif"))))
+ '(org-level-7 ((t (:inherit default :weight bold :foreground "#4d4d4c" :family "Sans Serif"))))
+ '(org-level-8 ((t (:inherit default :weight bold :foreground "#4d4d4c" :family "Sans Serif")))))
