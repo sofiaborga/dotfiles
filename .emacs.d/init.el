@@ -217,6 +217,23 @@ There are two things you can do about this warning:
 (setq org-todo-keywords
       '((sequence "TODO" "IN-PROGRESS" "WAITING" "|" "DONE" "CANCELED")))
 
+;;Tags (global)
+(setq org-tag-alist '((:startgroup . nil)
+                      ("@DATAWORK" . ?d)
+		      ("@FRITID" . ?f)
+                      ("@PROJEKT" . ?p)
+		      ("@SVERIGE" . ?S)
+                      (:endgroup . nil)
+                      ("@BJÖRNEN" . ?B)
+		      ("@LÄSA" . ?l)
+		      ("@ÄRENDEN" . ?a)
+		      ("@WEBSURF" . ?w)
+		      ("@TELEFONEN" . ?t)
+		      ("@SPRINT" . ?s)
+		      ("Ben" . ?b)))
+
+(setq org-tags-exclude-from-inheritance '("@PROJEKT"))
+
 ;;Agenda setup
 (setq org-agenda-files '("~/GTD/master.org"  
 			  "~/GTD/tickler.org"))
@@ -226,28 +243,41 @@ There are two things you can do about this warning:
 (setq org-deadline-warning-days 14)
 
 (setq org-agenda-custom-commands
-      '(("c" "Simple agenda view"
+      '(("d" "Daily overview"
          ((tags "PRIORITY=\"A\""
                 ((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
                  (org-agenda-overriding-header "Most Important Things")))
           (agenda "")
-          (alltodo "")))
-      
+          (tags-todo "@DATAWORK")
+	  (tags-todo "@TELEFONEN")
+	  (tags-todo "@SPRINT")
+	  (tags-todo "@LÄSA")
+	  (tags-todo "@WEBSURF")))
+
+	("f" "Free time tasks"
+	 ((tags-todo "Ben")
+	  (tags-todo "@TELEFONEN")
+	  (tags-todo "@FRITID")
+	  (tags-todo "@LÄSA")
+	  (tags-todo "@SPRINT")
+	  (tags-todo "@WEBSURF")))
+	
         ("V" "Veckogenomgång"
 	 ((agenda)
-            (tags-todo "@SVÅRT")
-            (tags-todo "@DATORN")
+            (tags-todo "@DATAWORK")
+            (tags-todo "@FRITID")
             (tags-todo "@TELEFONEN")
             (tags-todo "@LÄSA")
-            (tags-todo "@LÄTT")
+            (tags-todo "@WEBSURF")
 	    (tags-todo "@ÄRENDEN")
-	    (tags-todo "@Ben")
-	    (tags-todo "@Österby")
+	    (tags-todo "Ben")
+	    (tags-todo "@PROJEKT")
 	    (tags-todo "@Sverige")))))
 
 
 ;;Capture target file
 ;;(setq org-default-notes-file org-default-inbox-file)
+
 ;;Capture templates
 
 ;;Refile targets
